@@ -5,31 +5,77 @@ import in.goldi.creatorstore.entities.Order;
 import in.goldi.creatorstore.services.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
+
     private final OrderService orderService;
+
+    // ==========================================
+    // CUSTOMER - CREATE ORDER
+    // ==========================================
+
     @PostMapping
-    public Order createOrder(@Valid @RequestBody OrderRequest orderRequest){
-        return orderService.createOrder(orderRequest);
+    public Order createOrder(
+            @Valid @RequestBody OrderRequest request,
+            Authentication authentication
+    ) {
 
-    }
-//get all orders
-    public List<Order> getAllOrders(){
-        return null;
-    }
-    //get order by id
-    public Order getOrderById(){
-        return null;
+        return orderService.createOrder(
+                request,
+                authentication.getName()
+        );
     }
 
+    // ==========================================
+    // CUSTOMER - MY ORDERS
+    // ==========================================
+
+    @GetMapping("/my-orders")
+    public List<Order> getMyOrders(
+            Authentication authentication
+    ) {
+
+        return orderService.getMyOrders(
+                authentication.getName()
+        );
+    }
+
+    // ==========================================
+    // CUSTOMER - MY ORDER
+    // ==========================================
+
+    @GetMapping("/{id}")
+    public Order getMyOrderById(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+
+        return orderService.getMyOrderById(
+                id,
+                authentication.getName()
+        );
+    }
+
+    // ==========================================
+    // CUSTOMER - CANCEL ORDER
+    // ==========================================
+
+    @PutMapping("/{id}/cancel")
+    public void cancelOrder(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+
+        orderService.cancelMyOrder(
+                id,
+                authentication.getName()
+        );
+    }
 }
-

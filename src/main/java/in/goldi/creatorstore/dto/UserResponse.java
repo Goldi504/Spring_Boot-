@@ -7,11 +7,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthResponse {
+public class UserResponse {
 
-    private String token;
-
-    private Long userId;
+    private Long id;
 
     private String name;
 

@@ -28,10 +28,14 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role;
+    private Role role;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL
+    )
     @Builder.Default
     private List<Order> orders = new ArrayList<>();
 }

@@ -28,8 +28,9 @@ public class Order {
     @Column(name = "customer_email", nullable = false)
     private String customerEmail;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private OrderStatus status;
 
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
@@ -37,22 +38,11 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    /*
-     * Many orders belong to one user.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonIgnore
     private User user;
 
-    /*
-     * One order can contain many order items.
-     *
-     * mappedBy = "order"
-     * because OrderItem has:
-     *
-     * private Order order;
-     */
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
@@ -63,8 +53,13 @@ public class Order {
 
     @PrePersist
     public void prePersist() {
+
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+
+        if (status == null) {
+            status = OrderStatus.PENDING;
         }
     }
 }
