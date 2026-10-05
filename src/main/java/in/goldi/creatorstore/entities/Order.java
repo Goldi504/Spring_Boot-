@@ -1,5 +1,6 @@
 package in.goldi.creatorstore.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,7 +35,8 @@ public class Order {
     @Column(name = "total_price" , nullable = false)
     private BigDecimal totalPrice;
 
-    @OneToMany(mappedBy = "order")
+    @JsonManagedReference
+    @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL )
     private List<OrderItem> orderItems;
 
     @Column(name = "create_at")
