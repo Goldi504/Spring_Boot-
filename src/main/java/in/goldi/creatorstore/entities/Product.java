@@ -1,22 +1,23 @@
 package in.goldi.creatorstore.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "products")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Product {
 
@@ -41,11 +42,13 @@ public class Product {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @NotNull(message = "Stock quantity is required")
     @Min(value = 0, message = "Stock cannot be less than 0")
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
-    private List<OrderItem> orderItems;
+    @Builder.Default
+    private List<OrderItem> orderItems = new ArrayList<>();
 }

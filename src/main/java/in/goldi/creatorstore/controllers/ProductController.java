@@ -1,7 +1,7 @@
 package in.goldi.creatorstore.controllers;
 
 import in.goldi.creatorstore.entities.Product;
-import in.goldi.creatorstore.serivces.ProductService;
+import in.goldi.creatorstore.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

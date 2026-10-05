@@ -1,50 +1,70 @@
 package in.goldi.creatorstore.entities;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name =  "orders")
+@Table(name = "orders")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-
+@AllArgsConstructor
+@Builder
 public class Order {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "customer_name" , nullable = false)
+    @Column(name = "customer_name", nullable = false)
     private String customerName;
 
-    @Column(name = "customer_email" , nullable = false)
+    @Column(name = "customer_email", nullable = false)
     private String customerEmail;
 
     @Column(nullable = false)
     private String status;
 
-    @Column(name = "total_price" , nullable = false)
+    @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
-    @JsonManagedReference
-    @OneToMany(mappedBy = "order" , cascade = CascadeType.ALL )
-    private List<OrderItem> orderItems;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "create_at")
-    private LocalDateTime createAt;
+    /*
+     * Many orders belong to one user.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
+
+    /*
+     * One order can contain many order items.
+     *
+     * mappedBy = "order"
+     * because OrderItem has:
+     *
+     * private Order order;
+     */
+    @OneToMany(
+            mappedBy = "order",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @PrePersist
-    public void prePersist(){
-        this.createAt = LocalDateTime.now();
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
-
 }

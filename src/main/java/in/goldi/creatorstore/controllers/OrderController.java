@@ -2,7 +2,7 @@ package in.goldi.creatorstore.controllers;
 
 import in.goldi.creatorstore.dto.OrderRequest;
 import in.goldi.creatorstore.entities.Order;
-import in.goldi.creatorstore.serivces.OrderService;
+import in.goldi.creatorstore.services.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;

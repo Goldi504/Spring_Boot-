@@ -1,4 +1,4 @@
-package in.goldi.creatorstore.serivces;
+package in.goldi.creatorstore.services;
 
 import in.goldi.creatorstore.entities.Product;
 import in.goldi.creatorstore.repositories.ProductRepository;
