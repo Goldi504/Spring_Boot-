@@ -1,15 +1,19 @@
 package in.goldi.creatorstore.services;
 
 import in.goldi.creatorstore.dto.OrderItemRequest;
+import in.goldi.creatorstore.dto.OrderItemResponse;
 import in.goldi.creatorstore.dto.OrderRequest;
-import in.goldi.creatorstore.entities.*;
+import in.goldi.creatorstore.dto.OrderResponse;
+import in.goldi.creatorstore.entities.Order;
+import in.goldi.creatorstore.entities.OrderItem;
+import in.goldi.creatorstore.entities.OrderStatus;
+import in.goldi.creatorstore.entities.Product;
+import in.goldi.creatorstore.entities.User;
 import in.goldi.creatorstore.exceptions.InsufficientStockException;
 import in.goldi.creatorstore.exceptions.ResourceNotFoundException;
 import in.goldi.creatorstore.repositories.OrderRepository;
 import in.goldi.creatorstore.repositories.ProductRepository;
 import in.goldi.creatorstore.repositories.UserRepository;
-import in.goldi.creatorstore.entities.OrderStatus;
-
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+
 
     // ==========================================
     // CREATE ORDER
@@ -55,6 +60,7 @@ public class OrderService {
 
         BigDecimal totalPrice = BigDecimal.ZERO;
 
+
         for (OrderItemRequest itemRequest : request.getItems()) {
 
             Product product = productRepository
@@ -66,6 +72,9 @@ public class OrderService {
                             )
                     );
 
+
+            // CHECK STOCK
+
             if (product.getStockQuantity()
                     < itemRequest.getQuantity()) {
 
@@ -75,6 +84,9 @@ public class OrderService {
                 );
             }
 
+
+            // CALCULATE ITEM TOTAL
+
             BigDecimal itemTotal =
                     product.getPrice()
                             .multiply(
@@ -83,7 +95,11 @@ public class OrderService {
                                     )
                             );
 
-            totalPrice = totalPrice.add(itemTotal);
+            totalPrice =
+                    totalPrice.add(itemTotal);
+
+
+            // REDUCE STOCK
 
             product.setStockQuantity(
                     product.getStockQuantity()
@@ -91,6 +107,9 @@ public class OrderService {
             );
 
             productRepository.save(product);
+
+
+            // CREATE ORDER ITEM
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -102,29 +121,37 @@ public class OrderService {
             orderItems.add(orderItem);
         }
 
+
         order.setTotalPrice(totalPrice);
         order.setOrderItems(orderItems);
 
         return orderRepository.save(order);
     }
 
+
     // ==========================================
     // CUSTOMER ORDERS
     // ==========================================
 
-    public List<Order> getMyOrders(String email) {
+    public List<OrderResponse> getMyOrders(
+            String email
+    ) {
 
         return orderRepository
                 .findByCustomerEmailIgnoreCaseOrderByCreatedAtDesc(
                         email
-                );
+                )
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
+
     // ==========================================
-    // GET CUSTOMER ORDER BY ID
+    // CUSTOMER ORDER BY ID
     // ==========================================
 
-    public Order getMyOrderById(
+    public OrderResponse getMyOrderById(
             Long orderId,
             String email
     ) {
@@ -139,21 +166,26 @@ public class OrderService {
             );
         }
 
-        return order;
+        return toResponse(order);
     }
 
+
     // ==========================================
-    // ADMIN - GET ALL ORDERS
+    // ADMIN - ALL ORDERS
     // ==========================================
 
-    public List<Order> getAllOrders() {
+    public List<OrderResponse> getAllOrders() {
 
         return orderRepository
-                .findAllByOrderByCreatedAtDesc();
+                .findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
+
     // ==========================================
-    // GET ORDER BY ID
+    // INTERNAL GET ORDER
     // ==========================================
 
     public Order getOrderById(Long id) {
@@ -166,6 +198,7 @@ public class OrderService {
                         )
                 );
     }
+
 
     // ==========================================
     // ADMIN - UPDATE ORDER STATUS
@@ -181,25 +214,28 @@ public class OrderService {
 
         try {
 
-            OrderStatus newStatus =
+            OrderStatus orderStatus =
                     OrderStatus.valueOf(
-                            status.toUpperCase()
+                            status.trim().toUpperCase()
                     );
 
-            order.setStatus(newStatus);
+            order.setStatus(orderStatus);
+
+            return orderRepository.save(order);
 
         } catch (IllegalArgumentException ex) {
 
             throw new IllegalArgumentException(
-                    "Invalid order status: " + status
+                    "Invalid order status. Allowed values: "
+                            + "PENDING, CONFIRMED, PROCESSING, "
+                            + "SHIPPED, DELIVERED, CANCELLED"
             );
         }
-
-        return orderRepository.save(order);
     }
 
+
     // ==========================================
-    // CUSTOMER - CANCEL OWN ORDER
+    // CUSTOMER - CANCEL ORDER
     // ==========================================
 
     @Transactional
@@ -208,17 +244,38 @@ public class OrderService {
             String email
     ) {
 
-        Order order = getMyOrderById(id, email);
+        Order order = getOrderById(id);
+
+
+        // SECURITY CHECK
+
+        if (!order.getCustomerEmail()
+                .equalsIgnoreCase(email)) {
+
+            throw new ResourceNotFoundException(
+                    "Order not found"
+            );
+        }
+
+
+        // ALREADY CANCELLED
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
             return;
         }
 
-        if ("DELIVERED".equals(order.getStatus())) {
+
+        // DELIVERED ORDER CANNOT BE CANCELLED
+
+        if (order.getStatus() == OrderStatus.DELIVERED) {
+
             throw new IllegalStateException(
                     "Delivered order cannot be cancelled"
             );
         }
+
+
+        // RESTORE STOCK
 
         for (OrderItem item : order.getOrderItems()) {
 
@@ -232,8 +289,62 @@ public class OrderService {
             productRepository.save(product);
         }
 
+
+        // UPDATE STATUS
+
         order.setStatus(OrderStatus.CANCELLED);
 
         orderRepository.save(order);
+    }
+
+
+    // ==========================================
+    // ENTITY → RESPONSE DTO
+    // ==========================================
+
+    public OrderResponse toResponse(Order order) {
+
+        List<OrderItemResponse> items =
+                order.getOrderItems()
+                        .stream()
+                        .map(item -> {
+
+                            BigDecimal itemTotal =
+                                    item.getPriceAtPurchase()
+                                            .multiply(
+                                                    BigDecimal.valueOf(
+                                                            item.getQuantity()
+                                                    )
+                                            );
+
+                            return OrderItemResponse.builder()
+                                    .id(item.getId())
+                                    .productId(
+                                            item.getProduct().getId()
+                                    )
+                                    .productName(
+                                            item.getProduct().getName()
+                                    )
+                                    .quantity(
+                                            item.getQuantity()
+                                    )
+                                    .priceAtPurchase(
+                                            item.getPriceAtPurchase()
+                                    )
+                                    .itemTotal(itemTotal)
+                                    .build();
+                        })
+                        .toList();
+
+
+        return OrderResponse.builder()
+                .id(order.getId())
+                .customerName(order.getCustomerName())
+                .customerEmail(order.getCustomerEmail())
+                .status(order.getStatus())
+                .totalPrice(order.getTotalPrice())
+                .createdAt(order.getCreatedAt())
+                .items(items)
+                .build();
     }
 }

@@ -1,6 +1,6 @@
 package in.goldi.creatorstore.controllers;
 
-import in.goldi.creatorstore.entities.User;
+import in.goldi.creatorstore.dto.UserResponse;
 import in.goldi.creatorstore.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,42 +14,36 @@ public class UserController {
 
     private final UserService userService;
 
-    // ==========================================
-    // GET ALL USERS
-    // ==========================================
 
+    // GET ALL USERS
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
 
         return userService.getAllUsers();
     }
 
-    // ==========================================
-    // GET ALL CUSTOMERS
-    // ==========================================
 
+    // GET ALL CUSTOMERS
     @GetMapping("/customers")
-    public List<User> getAllCustomers() {
+    public List<UserResponse> getAllCustomers() {
 
         return userService.getAllCustomers();
     }
 
-    // ==========================================
-    // GET USER BY ID
-    // ==========================================
 
+    // GET USER BY ID
     @GetMapping("/{id}")
-    public User getUserById(
+    public UserResponse getUserById(
             @PathVariable Long id
     ) {
 
-        return userService.getUserById(id);
+        return userService.toResponse(
+                userService.getUserById(id)
+        );
     }
 
-    // ==========================================
-    // DELETE USER
-    // ==========================================
 
+    // DELETE USER
     @DeleteMapping("/{id}")
     public void deleteUser(
             @PathVariable Long id

@@ -1,5 +1,6 @@
 package in.goldi.creatorstore.controllers;
 
+import in.goldi.creatorstore.dto.OrderResponse;
 import in.goldi.creatorstore.entities.Order;
 import in.goldi.creatorstore.services.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -14,41 +15,50 @@ public class AdminOrderController {
 
     private final OrderService orderService;
 
+
     // ==========================================
-    // ADMIN - ALL ORDERS
+    // GET ALL ORDERS
     // ==========================================
 
     @GetMapping
-    public List<Order> getAllOrders() {
+    public List<OrderResponse> getAllOrders() {
 
         return orderService.getAllOrders();
     }
 
+
     // ==========================================
-    // ADMIN - GET ORDER
+    // GET ORDER BY ID
     // ==========================================
 
     @GetMapping("/{id}")
-    public Order getOrderById(
+    public OrderResponse getOrderById(
             @PathVariable Long id
     ) {
 
-        return orderService.getOrderById(id);
+        Order order =
+                orderService.getOrderById(id);
+
+        return orderService.toResponse(order);
     }
 
+
     // ==========================================
-    // ADMIN - UPDATE STATUS
+    // UPDATE ORDER STATUS
     // ==========================================
 
     @PutMapping("/{id}/status")
-    public Order updateOrderStatus(
+    public OrderResponse updateOrderStatus(
             @PathVariable Long id,
             @RequestParam String status
     ) {
 
-        return orderService.updateOrderStatus(
-                id,
-                status
-        );
+        Order order =
+                orderService.updateOrderStatus(
+                        id,
+                        status
+                );
+
+        return orderService.toResponse(order);
     }
 }

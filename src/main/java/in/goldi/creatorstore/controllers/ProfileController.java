@@ -1,6 +1,6 @@
 package in.goldi.creatorstore.controllers;
 
-import in.goldi.creatorstore.entities.User;
+import in.goldi.creatorstore.dto.UserResponse;
 import in.goldi.creatorstore.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -13,12 +13,16 @@ public class ProfileController {
 
     private final UserService userService;
 
+
     @GetMapping
-    public User getMyProfile(
+    public UserResponse getMyProfile(
             Authentication authentication
     ) {
 
-        return userService
-                .getUserByEmail(authentication.getName());
+        return userService.toResponse(
+                userService.getUserByEmail(
+                        authentication.getName()
+                )
+        );
     }
 }

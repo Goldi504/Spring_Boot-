@@ -1,6 +1,7 @@
 package in.goldi.creatorstore.controllers;
 
 import in.goldi.creatorstore.dto.OrderRequest;
+import in.goldi.creatorstore.dto.OrderResponse;
 import in.goldi.creatorstore.entities.Order;
 import in.goldi.creatorstore.services.OrderService;
 import jakarta.validation.Valid;
@@ -17,28 +18,33 @@ public class OrderController {
 
     private final OrderService orderService;
 
+
     // ==========================================
-    // CUSTOMER - CREATE ORDER
+    // CREATE ORDER
     // ==========================================
 
     @PostMapping
-    public Order createOrder(
+    public OrderResponse createOrder(
             @Valid @RequestBody OrderRequest request,
             Authentication authentication
     ) {
 
-        return orderService.createOrder(
-                request,
-                authentication.getName()
-        );
+        Order order =
+                orderService.createOrder(
+                        request,
+                        authentication.getName()
+                );
+
+        return orderService.toResponse(order);
     }
 
+
     // ==========================================
-    // CUSTOMER - MY ORDERS
+    // MY ORDERS
     // ==========================================
 
     @GetMapping("/my-orders")
-    public List<Order> getMyOrders(
+    public List<OrderResponse> getMyOrders(
             Authentication authentication
     ) {
 
@@ -47,12 +53,13 @@ public class OrderController {
         );
     }
 
+
     // ==========================================
-    // CUSTOMER - MY ORDER
+    // MY ORDER BY ID
     // ==========================================
 
     @GetMapping("/{id}")
-    public Order getMyOrderById(
+    public OrderResponse getMyOrderById(
             @PathVariable Long id,
             Authentication authentication
     ) {
@@ -63,12 +70,13 @@ public class OrderController {
         );
     }
 
+
     // ==========================================
-    // CUSTOMER - CANCEL ORDER
+    // CANCEL MY ORDER
     // ==========================================
 
     @PutMapping("/{id}/cancel")
-    public void cancelOrder(
+    public String cancelOrder(
             @PathVariable Long id,
             Authentication authentication
     ) {
@@ -77,5 +85,7 @@ public class OrderController {
                 id,
                 authentication.getName()
         );
+
+        return "Order cancelled successfully";
     }
 }
